@@ -1,0 +1,123 @@
+# Local AI instructions and temporary design and planning documentation
+AGENTS.md
+/design_docs
+/unit_tests
+
+# Dependencies
+node_modules/
+
+# Expo and generated web output
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Generated native projects: Expo managed / Continuous Native Generation workflow.
+# Remove these rules if native projects become intentionally maintained source.
+/android/
+/ios/
+
+# Local environment variables and secrets; keep safe templates trackable
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.template
+!.env.*.template
+
+# Supabase local runtime / linking metadata (keep config, migrations and seed SQL)
+supabase/.temp/
+supabase/.branches/
+supabase/.env
+supabase/.env.*
+!supabase/.env.example
+!supabase/.env.*.example
+
+# Logs and diagnostics
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build / test caches
+coverage/
+.nyc_output/
+*.tsbuildinfo
+.eslintcache
+
+# Signing credentials
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Nix / direnv local outputs (keep flake.nix and flake.lock)
+.direnv/
+/result
+/result-*
+
+# OS / editor temporary files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+## GIT IGNORE FROM CLIENT ##
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+example
+
+# generated native folders
+client/ios
+client/android
+
+## GIT IGNORE FROM SUPABASE ##
+
+# Supabase
+.branches
+.temp
+
+# dotenvx
+.env.keys
+.env.local
+.env.*.local

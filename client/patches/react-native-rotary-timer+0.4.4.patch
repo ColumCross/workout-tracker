@@ -1,0 +1,178 @@
+diff --git a/node_modules/react-native-rotary-timer/lib/module/components/ring/useRing.js b/node_modules/react-native-rotary-timer/lib/module/components/ring/useRing.js
+index 334c65f..b2bbb7b 100644
+--- a/node_modules/react-native-rotary-timer/lib/module/components/ring/useRing.js
++++ b/node_modules/react-native-rotary-timer/lib/module/components/ring/useRing.js
+@@ -1,7 +1,7 @@
+ "use strict";
+ 
+ import { useMemo } from 'react';
+-import { interpolateColor, useAnimatedProps, useAnimatedStyle, useDerivedValue, withSpring } from 'react-native-reanimated';
++import { interpolateColor, useAnimatedProps, useAnimatedStyle, useDerivedValue } from 'react-native-reanimated';
+ import { useRotaryTimerCore, useRotaryTimerAppearance } from "../../hooks/index.js";
+ import { normalizeAngle0To2Pi } from "../../helpers/index.js";
+ import { DEFAULT_RING_ACTIVE_COLOR, TWO_PI } from "../../constants/index.js";
+@@ -35,9 +35,7 @@ export const useRing = () => {
+   const cx = size / 2;
+   const cy = size / 2;
+   const radius = Math.max((size - ringWidth) / 2, 0);
+-  const animatedRotationSharedValue = useDerivedValue(() => {
+-    return isDraggingSharedValue.value ? rotationSharedValue.value : withSpring(rotationSharedValue.value);
+-  });
++  const animatedRotationSharedValue = useDerivedValue(() => rotationSharedValue.value);
+   const colors = useMemo(() => normalizeColors(ringActiveColor), [ringActiveColor]);
+   const effectiveDashSV = useDerivedValue(() => {
+     const circumference = TWO_PI * radius;
+diff --git a/node_modules/react-native-rotary-timer/lib/module/hooks/useGesture.js b/node_modules/react-native-rotary-timer/lib/module/hooks/useGesture.js
+index 96f9d69..bcc7b5b 100644
+--- a/node_modules/react-native-rotary-timer/lib/module/hooks/useGesture.js
++++ b/node_modules/react-native-rotary-timer/lib/module/hooks/useGesture.js
+@@ -44,6 +44,9 @@ export const useGesture = () => {
+       const deltaAngle = normalizeDeltaAngle(currentAngle - previousAngleSharedValue.value);
+       const limitedRotation = maxMinValue((rotationSharedValue.value || 0) + deltaAngle, maxRotation, minRotation);
+       rotationSharedValue.value = limitedRotation;
++      if (onChange) {
++        scheduleOnRN(onChange, limitedRotation);
++      }
+     }
+     previousAngleSharedValue.value = currentAngle;
+   }).onEnd(() => {
+@@ -58,28 +61,6 @@ export const useGesture = () => {
+       scheduleOnRN(onChange, limitedRotation);
+     }
+   }).enabled(!!isEditable), [size, previousAngleSharedValue, initialRotationSharedValue, rotationSharedValue, isDraggingSharedValue, maxRotation, minRotation, isEditable, stepSnapping, snapOffsetAngle, onChange, onTouchStart, onTouchEnd]);
+-  const tapGesture = useMemo(() => Gesture.Tap().onStart(() => {
+-    if (onTouchStart) {
+-      scheduleOnRN(onTouchStart, rotationSharedValue.value);
+-    }
+-  }).onEnd(e => {
+-    const x = e.x - size / 2;
+-    const y = e.y - size / 2;
+-    const angle = angleFromPointTopZero(x, y);
+-    const currentRotation = rotationSharedValue.value;
+-    const normalizedCurrent = normalizeAngle0To2Pi(currentRotation);
+-    const diff = normalizeDeltaAngle(angle - normalizedCurrent);
+-    const snapRotation = snapToStep(currentRotation + diff, stepSnapping, snapOffsetAngle, maxRotation, minRotation);
+-    const limitedRotation = maxMinValue(snapRotation, maxRotation, minRotation);
+-    rotationSharedValue.value = limitedRotation;
+-    if (onTouchEnd) {
+-      scheduleOnRN(onTouchEnd, limitedRotation);
+-    }
+-    if (onChange && limitedRotation !== currentRotation) {
+-      scheduleOnRN(onChange, limitedRotation);
+-    }
+-  }).maxDistance(10).enabled(!!isEditable), [size, rotationSharedValue, maxRotation, minRotation, isEditable, stepSnapping, snapOffsetAngle, onChange, onTouchEnd, onTouchStart]);
+-  const gesture = useMemo(() => Gesture.Simultaneous(panGesture, tapGesture), [panGesture, tapGesture]);
+-  return gesture;
++  return panGesture;
+ };
+ //# sourceMappingURL=useGesture.js.map
+diff --git a/node_modules/react-native-rotary-timer/src/components/ring/useRing.ts b/node_modules/react-native-rotary-timer/src/components/ring/useRing.ts
+index aa01d8f..472e8dd 100644
+--- a/node_modules/react-native-rotary-timer/src/components/ring/useRing.ts
++++ b/node_modules/react-native-rotary-timer/src/components/ring/useRing.ts
+@@ -4,7 +4,6 @@ import {
+   useAnimatedProps,
+   useAnimatedStyle,
+   useDerivedValue,
+-  withSpring,
+ } from 'react-native-reanimated';
+ import { useRotaryTimerCore, useRotaryTimerAppearance } from '../../hooks';
+ import { normalizeAngle0To2Pi } from '../../helpers';
+@@ -43,11 +42,9 @@ export const useRing = () => {
+   const cy = size / 2;
+   const radius = Math.max((size - ringWidth) / 2, 0);
+ 
+-  const animatedRotationSharedValue = useDerivedValue(() => {
+-    return isDraggingSharedValue.value
+-      ? rotationSharedValue.value
+-      : withSpring(rotationSharedValue.value);
+-  });
++  const animatedRotationSharedValue = useDerivedValue(
++    () => rotationSharedValue.value
++  );
+ 
+   const colors = useMemo(
+     () => normalizeColors(ringActiveColor),
+diff --git a/node_modules/react-native-rotary-timer/src/hooks/useGesture.ts b/node_modules/react-native-rotary-timer/src/hooks/useGesture.ts
+index fb0279c..9f98bb9 100644
+--- a/node_modules/react-native-rotary-timer/src/hooks/useGesture.ts
++++ b/node_modules/react-native-rotary-timer/src/hooks/useGesture.ts
+@@ -66,6 +66,9 @@ export const useGesture = () => {
+             );
+ 
+             rotationSharedValue.value = limitedRotation;
++            if (onChange) {
++              scheduleOnRN(onChange, limitedRotation);
++            }
+           }
+ 
+           previousAngleSharedValue.value = currentAngle;
+@@ -117,67 +120,5 @@ export const useGesture = () => {
+     ]
+   );
+ 
+-  const tapGesture = useMemo(
+-    () =>
+-      Gesture.Tap()
+-        .onStart(() => {
+-          if (onTouchStart) {
+-            scheduleOnRN(onTouchStart, rotationSharedValue.value);
+-          }
+-        })
+-        .onEnd((e) => {
+-          const x = e.x - size / 2;
+-          const y = e.y - size / 2;
+-
+-          const angle = angleFromPointTopZero(x, y);
+-          const currentRotation = rotationSharedValue.value;
+-
+-          const normalizedCurrent = normalizeAngle0To2Pi(currentRotation);
+-          const diff = normalizeDeltaAngle(angle - normalizedCurrent);
+-
+-          const snapRotation = snapToStep(
+-            currentRotation + diff,
+-            stepSnapping,
+-            snapOffsetAngle,
+-            maxRotation,
+-            minRotation
+-          );
+-
+-          const limitedRotation = maxMinValue(
+-            snapRotation,
+-            maxRotation,
+-            minRotation
+-          );
+-
+-          rotationSharedValue.value = limitedRotation;
+-
+-          if (onTouchEnd) {
+-            scheduleOnRN(onTouchEnd, limitedRotation);
+-          }
+-          if (onChange && limitedRotation !== currentRotation) {
+-            scheduleOnRN(onChange, limitedRotation);
+-          }
+-        })
+-        .maxDistance(10)
+-        .enabled(!!isEditable),
+-    [
+-      size,
+-      rotationSharedValue,
+-      maxRotation,
+-      minRotation,
+-      isEditable,
+-      stepSnapping,
+-      snapOffsetAngle,
+-      onChange,
+-      onTouchEnd,
+-      onTouchStart,
+-    ]
+-  );
+-
+-  const gesture = useMemo(
+-    () => Gesture.Simultaneous(panGesture, tapGesture),
+-    [panGesture, tapGesture]
+-  );
+-
+-  return gesture;
++  return panGesture;
+ };

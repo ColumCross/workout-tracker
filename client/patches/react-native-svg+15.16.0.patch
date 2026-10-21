@@ -1,0 +1,52 @@
+diff --git a/node_modules/react-native-svg/lib/module/web/WebShape.js b/node_modules/react-native-svg/lib/module/web/WebShape.js
+index b22a769..22b9a9a 100644
+--- a/node_modules/react-native-svg/lib/module/web/WebShape.js
++++ b/node_modules/react-native-svg/lib/module/web/WebShape.js
+@@ -30,10 +30,16 @@ export class WebShape extends React.Component {
+           case 'children':
+             break;
+           case 'style':
+-            // style can be an object here or an array, so we convert it to an array and assign each element
+-            for (const partialStyle of [].concat(clean.style ?? [])) {
+-              Object.assign(current.style, partialStyle);
+-            }
++            // Reanimated can send nested style arrays through react-native-svg.
++            // CSSStyleDeclaration rejects their numeric indexes, so flatten first.
++            const applyStyle = partialStyle => {
++              if (Array.isArray(partialStyle)) {
++                partialStyle.forEach(applyStyle);
++              } else if (partialStyle && typeof partialStyle === 'object') {
++                Object.assign(current.style, partialStyle);
++              }
++            };
++            applyStyle(clean.style);
+             break;
+           case 'fill':
+             if (cleanValue && typeof cleanValue === 'object') {
+diff --git a/node_modules/react-native-svg/src/web/WebShape.ts b/node_modules/react-native-svg/src/web/WebShape.ts
+index d76a6be..47dee89 100644
+--- a/node_modules/react-native-svg/src/web/WebShape.ts
++++ b/node_modules/react-native-svg/src/web/WebShape.ts
+@@ -47,12 +47,16 @@ export class WebShape<
+           case 'children':
+             break;
+           case 'style':
+-            // style can be an object here or an array, so we convert it to an array and assign each element
+-            for (const partialStyle of ([] as unknown[]).concat(
+-              clean.style ?? []
+-            )) {
+-              Object.assign(current.style, partialStyle);
+-            }
++            // Reanimated can send nested style arrays through react-native-svg.
++            // CSSStyleDeclaration rejects their numeric indexes, so flatten first.
++            const applyStyle = (partialStyle: unknown) => {
++              if (Array.isArray(partialStyle)) {
++                partialStyle.forEach(applyStyle);
++              } else if (partialStyle && typeof partialStyle === 'object') {
++                Object.assign(current.style, partialStyle);
++              }
++            };
++            applyStyle(clean.style);
+             break;
+           case 'fill':
+             if (cleanValue && typeof cleanValue === 'object') {
