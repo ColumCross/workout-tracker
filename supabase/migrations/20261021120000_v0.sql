@@ -29,6 +29,7 @@ create table public.exercises (
   exercise_name text not null check (btrim(exercise_name) <> ''),
   exercise_number integer not null check (exercise_number > 0),
   unique ("ID", "user"),
+  unique ("ID", "user", "workoutID"),
   unique ("workoutID", "user", exercise_number),
   foreign key ("workoutID", "user")
     references public.workouts ("workoutID", "user") on delete restrict,
@@ -39,13 +40,14 @@ create table public.exercises (
 create table public.sets (
   "ID" uuid primary key default gen_random_uuid(),
   "user" uuid not null references public.users ("user") on delete restrict,
+  "workoutID" text not null,
   "exerciseID" uuid not null,
   reps integer not null check (reps > 0),
   weight_g integer not null check (weight_g >= 0),
   set_number integer not null check (set_number > 0),
-  unique ("exerciseID", "user", set_number),
-  foreign key ("exerciseID", "user")
-    references public.exercises ("ID", "user") on delete restrict
+  unique ("workoutID", set_number),
+  foreign key ("exerciseID", "user", "workoutID")
+    references public.exercises ("ID", "user", "workoutID") on delete restrict
 );
 
 create index machines_user_idx on public.machines ("user");
@@ -65,6 +67,8 @@ revoke all on table public.machines from anon, authenticated;
 revoke all on table public.workouts from anon, authenticated;
 revoke all on table public.exercises from anon, authenticated;
 revoke all on table public.sets from anon, authenticated;
+
+grant insert on table public.users to service_role;
 
 create or replace function public."saveWorkout"(payload jsonb)
 returns table (success boolean, "workoutID" text)
@@ -280,8 +284,8 @@ begin
       v_weight_g := (v_set ->> 'weight_g')::integer;
       v_set_number := (v_set ->> 'set_number')::integer;
 
-      insert into public.sets ("user", "exerciseID", reps, weight_g, set_number)
-      values (v_user, v_exercise_id, v_reps, v_weight_g, v_set_number);
+      insert into public.sets ("user", "workoutID", "exerciseID", reps, weight_g, set_number)
+      values (v_user, v_workout_id, v_exercise_id, v_reps, v_weight_g, v_set_number);
     end loop;
   end loop;
 

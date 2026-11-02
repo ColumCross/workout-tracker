@@ -63,7 +63,7 @@ A user-owned machine catalog may be referenced by workout entries; its attribute
 4. Submit the workout; preserve the draft if submission fails.
 5. Clear the draft after confirmed success and make the saved workout available across devices.
 
-Workouts belong to the date they started. `start_time` is derived from the server-generated timestamp embedded in the workout ID; `end_time` is the database insertion time. Set weights are nonnegative integer grams in `weight_g`.
+Workouts belong to the date they started. `start_time` is derived from the server-generated timestamp embedded in the workout ID; `end_time` is the database insertion time. Set weights are nonnegative integer grams in `weight_g`. Set numbers are positive integers unique across the entire workout, enforced by `UNIQUE ("workoutID", set_number)`. They do not restart for each exercise. Each set's workout and owner must match its parent exercise.
 
 ## Repository and development
 
@@ -94,6 +94,24 @@ GitHub source control and database deployment are separate unless automation is 
 Scope all private reads and writes to the authenticated user, including child records. Child foreign keys include the user identifier so mismatched parent ownership cannot be stored. Prevent direct API access that bypasses required business rules. Validate on the backend even when the client already validates.
 
 Keep secrets in ignored environment files or provider settings. Commit placeholder examples and migrations, not credentials or user data. Hosted Google OAuth settings and frontend deployment require configuration beyond database migrations.
+
+### Administrator-managed access
+
+Google OAuth authenticates existing users; it does not define application authorization. New Auth users and email/password signups are disabled. The system administrator provisions each allowed person before their first Google login:
+
+1. Create a confirmed user in Supabase Auth using the exact email address verified by that person's Google account. Record the generated `auth.users.id` UUID.
+2. Insert a row in `public.users` with that UUID as `"user"`, plus any permitted profile values.
+3. On the first Google login, Supabase automatically links the verified Google identity to the existing Auth user by email. Subsequent sessions and backend authorization use the Supabase UUID from the signed token, not the email.
+
+Use `scripts/provision-user.mjs` to perform both trusted operations together:
+
+```bash
+SUPABASE_URL="https://YOUR_PROJECT.supabase.co" \
+SUPABASE_SECRET_KEY="sb_secret_..." \
+node scripts/provision-user.mjs "person@example.com" "Person Name"
+```
+
+The script creates an email-confirmed Auth user and matching application profile, and removes the Auth user if profile creation fails. It must run only from an administrator-controlled environment. Never expose a secret/service-role key in the client to provision users. The local Google provider reads `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` and `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET` from ignored root `.env`; start from `.env.example`. Local Postman OAuth redirects to `https://oauth.pstmn.io/v1/browser-callback`. Configure the hosted Google provider, hosted redirect allow-list, Site URL, and disabled signup setting separately in the Supabase dashboard. `supabase db push` does not deploy those Auth settings.
 
 # Workout Tracker Client
 
