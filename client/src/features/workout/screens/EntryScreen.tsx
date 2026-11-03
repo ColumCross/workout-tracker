@@ -1,15 +1,32 @@
+import { useState } from "react";
 import { Text, useTheme } from "react-native-paper";
 
+import { useAuthSession } from "@/features/auth/authSession";
 import { GhostButton } from "../components/GhostButton";
 import { Screen } from "../components/Screen";
 
-export function EntryScreen({ onContinue }: { onContinue: () => void }) {
+export function EntryScreen() {
   const theme = useTheme();
+  const { configurationError, googleSignInReady, signInWithGoogle } = useAuthSession();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const signIn = async () => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await signInWithGoogle();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Unable to sign in.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
   return (
     <Screen centered>
       <Text variant="headlineMedium" style={{ color: theme.colors.onSurface }}>Workout tracker</Text>
-      <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>Login is a placeholder for this preview.</Text>
-      <GhostButton onPress={onContinue}>Next</GhostButton>
+      <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>Sign in to record and save your workouts.</Text>
+      {configurationError || error ? <Text style={{ color: theme.colors.error }}>{configurationError ?? error}</Text> : null}
+      <GhostButton disabled={Boolean(configurationError) || !googleSignInReady || submitting} loading={submitting} onPress={signIn}>Sign in with Google</GhostButton>
     </Screen>
   );
 }

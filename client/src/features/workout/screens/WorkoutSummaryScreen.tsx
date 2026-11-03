@@ -10,11 +10,13 @@ import { formatWeight } from "../viewModel";
 
 export function WorkoutSummaryScreen({ onRestart, onNextExercise, onMissingSession }: { onRestart: () => void; onNextExercise: () => void; onMissingSession: () => void }) {
   const theme = useTheme();
-  const { preview, reset, beginNextExercise } = usePreviewSession();
+  const { preview, reset, beginNextExercise, submitWorkout, submissionError, submissionStatus, draftError } = usePreviewSession();
   useEffect(() => { if (!preview?.exercises.length) onMissingSession(); }, [preview, onMissingSession]);
   if (!preview?.exercises.length) return null;
   const continuePreview = () => { beginNextExercise(); onNextExercise(); };
-  const endPreview = () => { reset(); onRestart(); };
+  const finish = () => { reset(); onRestart(); };
+  const submitting = submissionStatus === "submitting";
+  const saved = submissionStatus === "saved";
   return (
     <Screen>
       <Text variant="headlineMedium" style={{ color: theme.colors.onSurface }}>Summary of exercises</Text>
@@ -26,7 +28,12 @@ export function WorkoutSummaryScreen({ onRestart, onNextExercise, onMissingSessi
           </Card.Content>
         </Card>
       ))}
-      <View style={styles.actions}><GhostButton onPress={continuePreview}>Next Exercise</GhostButton><GhostButton onPress={endPreview}>End</GhostButton></View>
+      {submissionError || draftError ? <Text style={{ color: theme.colors.error }}>{submissionError ?? draftError}</Text> : null}
+      {saved ? <Text variant="titleMedium" style={{ color: theme.colors.primary }}>Workout saved.</Text> : null}
+      <View style={styles.actions}>
+        {!saved ? <GhostButton disabled={submitting} onPress={continuePreview}>Next Exercise</GhostButton> : null}
+        <GhostButton loading={submitting} onPress={saved ? finish : submitWorkout}>{saved ? "Done" : submissionStatus === "error" ? "Retry save" : "End and save"}</GhostButton>
+      </View>
     </Screen>
   );
 }

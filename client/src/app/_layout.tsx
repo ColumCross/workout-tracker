@@ -6,6 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { useFonts } from "expo-font";
 import { Roboto_400Regular, Roboto_500Medium } from "@expo-google-fonts/roboto";
 
+import { AuthSessionProvider, useAuthSession } from "@/features/auth/authSession";
 import { PreviewSessionProvider } from "@/features/workout/previewSession";
 import { darkTheme, lightTheme } from "@/theme/themes";
 import { useSystemTheme } from "@/theme/useSystemTheme";
@@ -21,12 +22,35 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <PaperProvider theme={theme}>
-          <PreviewSessionProvider>
-            <Stack screenOptions={{ headerShown: false, animation: "fade" }} />
-            <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-          </PreviewSessionProvider>
+          <AuthSessionProvider>
+            <PreviewSessionProvider>
+              <RootNavigator />
+              <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+            </PreviewSessionProvider>
+          </AuthSessionProvider>
         </PaperProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
+  );
+}
+
+function RootNavigator() {
+  const { loading, session } = useAuthSession();
+  if (loading) return null;
+
+  return (
+    <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
+      <Stack.Protected guard={!session}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="auth/callback" />
+      </Stack.Protected>
+      <Stack.Protected guard={Boolean(session)}>
+        <Stack.Screen name="home" />
+        <Stack.Screen name="reports" />
+        <Stack.Screen name="workout/exercise" />
+        <Stack.Screen name="workout/session" />
+        <Stack.Screen name="workout/summary" />
+      </Stack.Protected>
+    </Stack>
   );
 }

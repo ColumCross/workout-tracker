@@ -4,6 +4,7 @@ import { StyleSheet } from "react-native";
 import Animated from "react-native-reanimated";
 import { Dialog, HelperText, IconButton, Portal, Text, TextInput, useTheme } from "react-native-paper";
 
+import { useAuthSession } from "@/features/auth/authSession";
 import { copy } from "../copy";
 import { ExerciseHeader } from "../components/ExerciseHeader";
 import { GhostButton } from "../components/GhostButton";
@@ -19,6 +20,7 @@ type Props = { onFinished: () => void; onDiscarded: () => void; onMissingSession
 
 export function WorkoutSessionScreen({ onFinished, onDiscarded, onMissingSession }: Props) {
   const theme = useTheme();
+  const { session: authSession } = useAuthSession();
   const session = usePreviewSession();
   const exercise = getActiveExercise(session.preview);
   const [renameVisible, setRenameVisible] = useState(false);
@@ -35,7 +37,7 @@ export function WorkoutSessionScreen({ onFinished, onDiscarded, onMissingSession
   useEffect(() => {
     if (session.mode === "resting" && session.timerStatus === "completed") session.showReady();
   }, [session]);
-  usePreventRemove(preventExit && Boolean(exercise), ({ repeat }) => { blockedRepeat.current = repeat; setDiscardVisible(true); });
+  usePreventRemove(preventExit && Boolean(exercise) && Boolean(authSession), ({ repeat }) => { blockedRepeat.current = repeat; setDiscardVisible(true); });
   if (!exercise) return null;
 
   const nextSetNumber = exercise.sets.length + 1;

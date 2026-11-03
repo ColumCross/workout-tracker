@@ -18,6 +18,7 @@ create table public.workouts (
   "user" uuid not null references public.users ("user") on delete restrict,
   start_time timestamptz not null,
   end_time timestamptz not null,
+  local_timezone text not null,
   unique ("workoutID", "user")
 );
 
@@ -69,6 +70,32 @@ revoke all on table public.exercises from anon, authenticated;
 revoke all on table public.sets from anon, authenticated;
 
 grant insert on table public.users to service_role;
+grant select on table public.users, public.machines, public.workouts, public.exercises, public.sets to authenticated;
+
+create policy users_select_own
+on public.users
+for select to authenticated
+using ("user" = (select auth.uid()));
+
+create policy machines_select_own
+on public.machines
+for select to authenticated
+using ("user" = (select auth.uid()));
+
+create policy workouts_select_own
+on public.workouts
+for select to authenticated
+using ("user" = (select auth.uid()));
+
+create policy exercises_select_own
+on public.exercises
+for select to authenticated
+using ("user" = (select auth.uid()));
+
+create policy sets_select_own
+on public.sets
+for select to authenticated
+using ("user" = (select auth.uid()));
 
 create or replace function public."saveWorkout"(payload jsonb)
 returns table (success boolean, "workoutID" text)
@@ -157,7 +184,7 @@ begin
   if exists (
     select 1
     from jsonb_object_keys(payload) as key(name)
-    where name not in ('workoutID', 'exercises')
+    where name not in ('workoutID', 'local_timezone', 'exercises')
   ) then
     raise exception 'payload contains unsupported fields' using errcode = '22023';
   end if;
@@ -181,8 +208,8 @@ begin
 
   v_exercises := payload -> 'exercises';
 
-  insert into public.workouts ("workoutID", "user", start_time, end_time)
-  values (v_workout_id, v_user, v_start_time, clock_timestamp());
+  insert into public.workouts ("workoutID", "user", start_time, end_time, local_timezone)
+  values (v_workout_id, v_user, v_start_time, clock_timestamp(), payload ->> 'local_timezone');
 
   for v_exercise, v_exercise_index in
     select value, ordinality
@@ -295,3 +322,80 @@ $$;
 
 revoke all on function public."saveWorkout"(jsonb) from public, anon;
 grant execute on function public."saveWorkout"(jsonb) to authenticated;
+
+create or replace function public."getWorkouts"()
+returns jsonb
+language plpgsql
+security invoker
+set search_path = pg_catalog
+as $$
+declare
+  v_user uuid := auth.uid();
+begin
+  if v_user is null then
+    raise exception 'Unauthorized' using errcode = 'PT403';
+  end if;
+
+  if not exists (
+    select 1
+    from public.users
+    where "user" = v_user
+  ) then
+    raise exception 'The authenticated user is not provisioned' using errcode = '42501';
+  end if;
+
+  return (
+    select coalesce(
+      jsonb_agg(
+        jsonb_build_object(
+          'start_time', w.start_time,
+          'end_time', w.end_time,
+          'local_timezone', w.local_timezone,
+          'exercises', (
+            select jsonb_agg(
+              jsonb_build_object(
+                'exercise_name', e.exercise_name,
+                'exercise_number', e.exercise_number,
+                'sets', (
+                  select coalesce(
+                    jsonb_agg(
+                      jsonb_build_object(
+                        'set_number', s.set_number,
+                        'reps', s.reps,
+                        'weight_g', s.weight_g
+                      )
+                      order by s.set_number asc
+                    ),
+                    '[]'::jsonb
+                  )
+                  from public.sets as s
+                  where s."exerciseID" = e."ID"
+                    and s."user" = v_user
+                    and s."workoutID" = w."workoutID"
+                )
+              )
+              order by e.exercise_number asc
+            )
+            from public.exercises as e
+            where e."workoutID" = w."workoutID"
+              and e."user" = v_user
+          )
+        )
+        order by w.start_time asc
+      ),
+      '[]'::jsonb
+    )
+    from public.workouts as w
+    where w."user" = v_user
+      and exists (
+        select 1
+        from public.exercises as e
+        where e."workoutID" = w."workoutID"
+          and e."user" = v_user
+      )
+  );
+end;
+$$;
+
+revoke all on function public."getWorkouts"() from public, anon;
+grant execute on function public."getWorkouts"() to authenticated;

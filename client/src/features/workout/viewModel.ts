@@ -6,7 +6,16 @@ export type ExerciseView = {
   sets: RecordedSetView[];
 };
 
-export type WorkoutPreview = { localKey: string; exercises: ExerciseView[] };
+export type WorkoutStage = "exercise" | "session" | "summary";
+
+export type WorkoutPreview = {
+  localKey: string;
+  workoutID: string;
+  ownerID: string;
+  localTimezone: string;
+  stage: WorkoutStage;
+  exercises: ExerciseView[];
+};
 
 export type TimerStatus = "idle" | "running" | "paused" | "completed";
 export type SessionMode = "ready" | "entry" | "resting";
@@ -18,14 +27,15 @@ export function createLocalKey() {
 export function parseReps(value: string): number | null {
   if (!/^\d+$/.test(value.trim())) return null;
   const parsed = Number(value);
-  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+  return Number.isSafeInteger(parsed) && parsed > 0 && parsed <= 2147483647 ? parsed : null;
 }
 
 export function parseWeight(value: string): number | null {
   const normalized = value.trim().replace(",", ".");
   if (!/^(?:\d+|\d+\.\d+|\.\d+)$/.test(normalized)) return null;
   const parsed = Number(normalized);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+  const grams = Math.round(parsed * 1000);
+  return Number.isFinite(parsed) && parsed >= 0 && Number.isSafeInteger(grams) && grams <= 2147483647 ? parsed : null;
 }
 
 export function formatDuration(seconds: number) {

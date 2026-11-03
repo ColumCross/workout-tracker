@@ -5,7 +5,7 @@ import { WorkoutSummaryScreen } from "@/features/workout/screens/WorkoutSummaryS
 export default function SummaryRoute() {
   return (
     <WorkoutSummaryScreen
-      onRestart={() => router.replace("/")}
+      onRestart={() => router.replace("/home" as Href)}
       onNextExercise={() => router.replace("/workout/exercise" as Href)}
       onMissingSession={() => router.replace("/home" as Href)}
     />
