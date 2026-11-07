@@ -1,0 +1,30 @@
+meta {
+  name: 33 - A can read only own workouts
+  type: http
+  seq: 33
+}
+
+get {
+  url: {{base_url}}/rest/v1/workouts?select=workoutID,user,local_timezone&order=start_time.asc
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+tests {
+  test("A sees own rows and no B rows", () => {
+    expect(res.getStatus()).to.equal(200);
+    const rows = res.getBody();
+    expect(rows.map((row) => row.workoutID)).to.deep.equal([
+      bru.getEnvVar("workout_id_a"),
+      bru.getEnvVar("rollback_workout_id"),
+      bru.getEnvVar("validation_workout_id")
+    ]);
+    expect(rows.every((row) => row.user === bru.getEnvVar("user_a_id"))).to.equal(true);
+    expect(rows.some((row) => row.workoutID === bru.getEnvVar("workout_id_b"))).to.equal(false);
+  });
+}

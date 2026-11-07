@@ -1,0 +1,32 @@
+meta {
+  name: 74 - Refresh A session
+  type: http
+  seq: 74
+}
+
+post {
+  url: {{base_url}}/auth/v1/token?grant_type=refresh_token
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "refresh_token": "{{refresh_token_a}}" }
+}
+
+tests {
+  test("Refresh preserves A UUID and rotates usable credentials", () => {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.user.id).to.equal(bru.getEnvVar("user_a_id"));
+    expect(body.access_token).to.be.a("string").and.not.empty;
+    expect(body.refresh_token).to.be.a("string").and.not.empty;
+    bru.setEnvVar("access_token_a", body.access_token);
+    bru.setEnvVar("refresh_token_a", body.refresh_token);
+  });
+}

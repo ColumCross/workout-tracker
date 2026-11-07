@@ -1,0 +1,24 @@
+meta {
+  name: 63 - Bulk deletion retains profile
+  type: http
+  seq: 63
+}
+
+get {
+  url: {{base_url}}/rest/v1/users?select=user,eula_acknowledged
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{bulk_access_token}}
+}
+
+tests {
+  test("Bulk fixture remains an application member", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.have.length(1);
+    expect(res.getBody()[0].user).to.equal(bru.getEnvVar("bulk_user_id"));
+  });
+}

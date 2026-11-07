@@ -8,6 +8,7 @@ export default function HomeRoute() {
       onNewWorkout={() => router.push("/workout/exercise" as Href)}
       onResumeWorkout={(stage) => router.push(`/workout/${stage}` as Href)}
       onReports={() => router.push("/reports" as Href)}
+      onPrivacyPolicy={() => router.push("/privacy-policy" as Href)}
     />
   );
 }

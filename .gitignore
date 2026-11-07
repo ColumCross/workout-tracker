@@ -1,7 +1,7 @@
 # Local AI instructions and temporary design and planning documentation
 AGENTS.md
 /design_docs
-/unit_tests
+/scripts/
 
 # Dependencies
 node_modules/
@@ -32,6 +32,9 @@ supabase/.env
 supabase/.env.*
 !supabase/.env.example
 !supabase/.env.*.example
+
+# Provisioning scripts
+provision_users.sql
 
 # Logs and diagnostics
 *.log

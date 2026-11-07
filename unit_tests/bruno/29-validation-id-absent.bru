@@ -1,0 +1,23 @@
+meta {
+  name: 29 - Validation failures leave no workout
+  type: http
+  seq: 29
+}
+
+get {
+  url: {{base_url}}/rest/v1/workouts?select=workoutID&workoutID=eq.{{validation_workout_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+tests {
+  test("All rejected candidates left the ID unsaved", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.deep.equal([]);
+  });
+}

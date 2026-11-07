@@ -1,0 +1,24 @@
+meta {
+  name: 61 - Delete all workouts
+  type: http
+  seq: 61
+}
+
+delete {
+  url: {{base_url}}/functions/v1/deleteAllWorkouts
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{bulk_access_token}}
+}
+
+tests {
+  test("Bulk deletion confirms success without caching", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getHeader("cache-control")).to.equal("no-store");
+    expect(res.getBody()).to.deep.equal({ success: true });
+  });
+}

@@ -1,0 +1,24 @@
+meta {
+  name: 65 - Bulk deletion leaves B unchanged
+  type: http
+  seq: 65
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkouts?userId={{user_b_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_b}}
+}
+
+tests {
+  test("Dedicated bulk deletion did not affect B", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().workouts).to.have.length(1);
+    expect(res.getBody().workouts[0].exercises[0].exercise_name).to.equal("B shared squat");
+  });
+}

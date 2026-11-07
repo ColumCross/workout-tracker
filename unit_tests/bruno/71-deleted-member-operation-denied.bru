@@ -1,0 +1,23 @@
+meta {
+  name: 71 - Deleted member operation denied
+  type: http
+  seq: 71
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkoutID
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{delete_access_token}}
+}
+
+tests {
+  test("Retained Auth identity no longer has application membership", () => {
+    expect(res.getStatus()).to.equal(403);
+    expect(res.getBody().error).to.include("not provisioned");
+  });
+}

@@ -1,0 +1,28 @@
+meta {
+  name: 14 - Identical retry A
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/saveWorkout
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "payload": { "workoutID": "{{workout_id_a}}", "local_timezone": "Europe/Dublin", "exercises": [{ "exercise_name": "A shared press", "machine_id": "{{shared_machine_id}}", "sets": [{ "reps": 10, "weight_g": 0, "set_number": 1 }, { "reps": 8, "weight_g": 82500, "set_number": 2 }] }, { "exercise_name": "A row", "machine_id": null, "sets": [{ "reps": 12, "weight_g": 30000, "set_number": 3 }] }] } }
+}
+
+tests {
+  test("Identical retry succeeds with the same ID", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.deep.equal([{ success: true, workoutID: bru.getEnvVar("workout_id_a") }]);
+  });
+}

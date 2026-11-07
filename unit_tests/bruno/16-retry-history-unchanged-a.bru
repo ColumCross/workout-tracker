@@ -1,0 +1,27 @@
+meta {
+  name: 16 - Retry history unchanged A
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkouts?userId={{user_a_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+tests {
+  test("Retries neither duplicate nor overwrite history", () => {
+    const workouts = res.getBody().workouts;
+    expect(res.getStatus()).to.equal(200);
+    expect(workouts).to.have.length(1);
+    expect(workouts[0].local_timezone).to.equal("Europe/Dublin");
+    expect(workouts[0].exercises[0].exercise_name).to.equal("A shared press");
+    expect(workouts[0].exercises[0].sets[0]).to.deep.equal({ set_number: 1, reps: 10, weight_g: 0 });
+  });
+}

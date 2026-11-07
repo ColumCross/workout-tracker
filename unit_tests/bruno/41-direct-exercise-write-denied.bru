@@ -1,0 +1,28 @@
+meta {
+  name: 41 - Direct exercise write denied
+  type: http
+  seq: 41
+}
+
+post {
+  url: {{base_url}}/rest/v1/exercises
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "user": "{{user_a_id}}", "workoutID": "{{workout_id_a}}", "exercise": "{{shared_machine_id}}", "exercise_name": "Direct write must fail", "exercise_number": 99 }
+}
+
+tests {
+  test("Authenticated has no direct exercise INSERT", () => {
+    expect(res.getStatus()).to.equal(403);
+    expect(res.getBody().code).to.equal("42501");
+  });
+}

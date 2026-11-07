@@ -1,0 +1,27 @@
+meta {
+  name: 06 - SMS signup disabled
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/auth/v1/signup
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "phone": "{{signup_phone}}", "password": "{{signup_password}}" }
+}
+
+tests {
+  test("SMS signup is specifically disabled", () => {
+    expect(res.getStatus()).to.equal(422);
+    expect(res.getBody().error_code).to.equal("signup_disabled");
+  });
+}

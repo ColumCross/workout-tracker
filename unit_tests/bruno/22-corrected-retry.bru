@@ -1,0 +1,28 @@
+meta {
+  name: 22 - Corrected retry same ID
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/saveWorkout
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "payload": { "workoutID": "{{rollback_workout_id}}", "local_timezone": "Etc/UTC", "exercises": [{ "exercise_name": "Rollback corrected", "sets": [{ "reps": 6, "weight_g": 1000, "set_number": 1 }] }, { "exercise_name": "Rollback second", "sets": [{ "reps": 7, "weight_g": 2000, "set_number": 2 }] }] } }
+}
+
+tests {
+  test("Corrected retry persists under the original ID", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.deep.equal([{ success: true, workoutID: bru.getEnvVar("rollback_workout_id") }]);
+  });
+}

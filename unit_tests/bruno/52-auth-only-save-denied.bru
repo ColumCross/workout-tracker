@@ -1,0 +1,28 @@
+meta {
+  name: 52 - Auth-only save denied
+  type: http
+  seq: 52
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/saveWorkout
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{auth_only_access_token}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "payload": { "workoutID": "{{auth_only_workout_id}}", "local_timezone": "Etc/UTC", "exercises": [{ "exercise_name": "Auth-only denied", "sets": [{ "reps": 1, "weight_g": 0, "set_number": 1 }] }] } }
+}
+
+tests {
+  test("Auth-only save fails specifically on membership", () => {
+    expect(res.getStatus()).to.equal(403);
+    expect(res.getBody().code).to.equal("42501");
+  });
+}

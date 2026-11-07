@@ -1,0 +1,28 @@
+meta {
+  name: 79 - Revoked A refresh denied
+  type: http
+  seq: 79
+}
+
+post {
+  url: {{base_url}}/auth/v1/token?grant_type=refresh_token
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "refresh_token": "{{revoked_refresh_token_a}}" }
+}
+
+tests {
+  test("A revoked refresh token cannot be reused", () => {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getBody().access_token).to.equal(undefined);
+    expect(["refresh_token_not_found", "refresh_token_already_used", "session_not_found"]).to.include(res.getBody().error_code);
+  });
+}

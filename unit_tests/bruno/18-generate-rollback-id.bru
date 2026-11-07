@@ -1,0 +1,29 @@
+meta {
+  name: 18 - Generate rollback ID
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkoutID
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+script:pre-request {
+  bru.setEnvVar("rollback_workout_id", "");
+}
+
+tests {
+  test("Fresh A rollback ID", () => {
+    expect(res.getStatus()).to.equal(200);
+    const id = res.getBody().workoutID;
+    expect(id).to.match(new RegExp("-" + bru.getEnvVar("user_a_id") + "$"));
+    bru.setEnvVar("rollback_workout_id", id);
+  });
+}

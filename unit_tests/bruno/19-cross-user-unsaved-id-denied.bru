@@ -1,0 +1,28 @@
+meta {
+  name: 19 - B cannot save A unsaved ID
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/saveWorkout
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_b}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "payload": { "workoutID": "{{rollback_workout_id}}", "local_timezone": "Etc/UTC", "exercises": [{ "exercise_name": "Cross-user unsaved", "sets": [{ "reps": 1, "weight_g": 0, "set_number": 1 }] }] } }
+}
+
+tests {
+  test("ID suffix prevents cross-user creation", () => {
+    expect(res.getStatus()).to.equal(403);
+    expect(res.getBody().code).to.equal("PT403");
+  });
+}

@@ -1,0 +1,40 @@
+meta {
+  name: 11 - Save B aggregate
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/saveWorkout
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_b}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "payload": {
+      "workoutID": "{{workout_id_b}}",
+      "local_timezone": "Etc/UTC",
+      "exercises": [
+        {
+          "exercise_name": "B shared squat",
+          "machine_id": "{{shared_machine_id}}",
+          "sets": [{ "reps": 5, "weight_g": 100000, "set_number": 1 }]
+        }
+      ]
+    }
+  }
+}
+
+tests {
+  test("Complete B aggregate saved", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.deep.equal([{ success: true, workoutID: bru.getEnvVar("workout_id_b") }]);
+  });
+}

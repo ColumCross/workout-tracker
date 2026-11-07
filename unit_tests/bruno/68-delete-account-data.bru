@@ -1,0 +1,24 @@
+meta {
+  name: 68 - Delete application account data
+  type: http
+  seq: 68
+}
+
+delete {
+  url: {{base_url}}/functions/v1/deleteUser
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{delete_access_token}}
+}
+
+tests {
+  test("Account data deletion confirms success without caching", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getHeader("cache-control")).to.equal("no-store");
+    expect(res.getBody()).to.deep.equal({ success: true });
+  });
+}

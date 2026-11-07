@@ -1,0 +1,29 @@
+meta {
+  name: 59 - Generate bulk fixture ID
+  type: http
+  seq: 59
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkoutID
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{bulk_access_token}}
+}
+
+script:pre-request {
+  bru.setEnvVar("bulk_workout_id", "");
+}
+
+tests {
+  test("Bulk fixture gets own ID", () => {
+    expect(res.getStatus()).to.equal(200);
+    const id = res.getBody().workoutID;
+    expect(id).to.match(new RegExp("-" + bru.getEnvVar("bulk_user_id") + "$"));
+    bru.setEnvVar("bulk_workout_id", id);
+  });
+}

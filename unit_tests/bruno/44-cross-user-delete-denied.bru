@@ -1,0 +1,23 @@
+meta {
+  name: 44 - Cross-user workout delete denied
+  type: http
+  seq: 44
+}
+
+delete {
+  url: {{base_url}}/rest/v1/workouts?workoutID=eq.{{workout_id_b}}
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+tests {
+  test("Authenticated has no direct workout DELETE", () => {
+    expect(res.getStatus()).to.equal(403);
+    expect(res.getBody().code).to.equal("42501");
+  });
+}

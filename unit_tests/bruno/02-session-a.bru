@@ -1,0 +1,24 @@
+meta {
+  name: 02 - Synthetic session A
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/auth/v1/user
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+tests {
+  test("Session A is current and synthetic", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().id).to.equal(bru.getEnvVar("user_a_id"));
+    expect(res.getBody().app_metadata.provider).to.equal("email");
+  });
+}

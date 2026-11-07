@@ -1,0 +1,27 @@
+meta {
+  name: 24 - Generate validation ID
+  type: http
+  seq: 24
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkoutID
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+script:pre-request {
+  bru.setEnvVar("validation_workout_id", "");
+}
+
+tests {
+  test("Fresh validation ID", () => {
+    expect(res.getStatus()).to.equal(200);
+    bru.setEnvVar("validation_workout_id", res.getBody().workoutID);
+  });
+}

@@ -1,0 +1,28 @@
+meta {
+  name: 60 - Save bulk fixture hierarchy
+  type: http
+  seq: 60
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/saveWorkout
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{bulk_access_token}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "payload": { "workoutID": "{{bulk_workout_id}}", "local_timezone": "Etc/UTC", "exercises": [{ "exercise_name": "Bulk one", "machine_id": "{{shared_machine_id}}", "sets": [{ "reps": 1, "weight_g": 0, "set_number": 1 }, { "reps": 2, "weight_g": 1000, "set_number": 2 }] }, { "exercise_name": "Bulk two", "sets": [{ "reps": 3, "weight_g": 2000, "set_number": 3 }] }] } }
+}
+
+tests {
+  test("Dedicated bulk hierarchy saved", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()[0].workoutID).to.equal(bru.getEnvVar("bulk_workout_id"));
+  });
+}

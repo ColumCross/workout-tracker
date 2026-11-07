@@ -1,0 +1,28 @@
+meta {
+  name: 17 - A cannot retry B ID
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/saveWorkout
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "payload": { "workoutID": "{{workout_id_b}}", "local_timezone": "Etc/UTC", "exercises": [{ "exercise_name": "A must not own B ID", "sets": [{ "reps": 1, "weight_g": 0, "set_number": 1 }] }] } }
+}
+
+tests {
+  test("Cross-user saved ID is rejected by ownership check", () => {
+    expect(res.getStatus()).to.equal(403);
+    expect(res.getBody().code).to.equal("PT403");
+  });
+}

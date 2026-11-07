@@ -1,0 +1,39 @@
+meta {
+  name: 12 - Reports A exact hierarchy
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkouts?userId={{user_a_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+tests {
+  test("A receives one ID-free ordered aggregate", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getHeader("cache-control")).to.equal("no-store");
+    const workouts = res.getBody().workouts;
+    expect(workouts).to.have.length(1);
+    expect(Object.keys(workouts[0])).to.have.members(["start_time", "end_time", "local_timezone", "exercises"]);
+    expect(workouts[0].local_timezone).to.equal("Europe/Dublin");
+    expect(Date.parse(workouts[0].start_time)).to.equal(Number(bru.getEnvVar("workout_id_a").split("-")[0]));
+    expect(Date.parse(workouts[0].end_time)).to.be.at.least(Date.parse(workouts[0].start_time));
+    expect(workouts[0].exercises).to.deep.equal([
+      { exercise_name: "A shared press", exercise_number: 1, sets: [
+        { set_number: 1, reps: 10, weight_g: 0 },
+        { set_number: 2, reps: 8, weight_g: 82500 }
+      ] },
+      { exercise_name: "A row", exercise_number: 2, sets: [
+        { set_number: 3, reps: 12, weight_g: 30000 }
+      ] }
+    ]);
+    expect(JSON.stringify(workouts)).to.not.include(bru.getEnvVar("user_b_id"));
+  });
+}

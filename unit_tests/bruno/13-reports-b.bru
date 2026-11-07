@@ -1,0 +1,30 @@
+meta {
+  name: 13 - Reports B isolation
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkouts?userId={{user_b_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_b}}
+}
+
+tests {
+  test("B receives only B's distinguishable history", () => {
+    expect(res.getStatus()).to.equal(200);
+    const workouts = res.getBody().workouts;
+    expect(workouts).to.have.length(1);
+    expect(workouts[0].exercises).to.deep.equal([
+      { exercise_name: "B shared squat", exercise_number: 1, sets: [
+        { set_number: 1, reps: 5, weight_g: 100000 }
+      ] }
+    ]);
+    expect(JSON.stringify(workouts)).to.not.include("A shared press");
+  });
+}

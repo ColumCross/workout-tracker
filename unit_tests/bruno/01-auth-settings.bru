@@ -1,0 +1,25 @@
+meta {
+  name: 01 - Auth settings
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/auth/v1/settings
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+}
+
+tests {
+  test("HTTP 200", () => expect(res.getStatus()).to.equal(200));
+  test("Google enabled; public and anonymous signup disabled", () => {
+    const body = res.getBody();
+    expect(body.external.google).to.equal(true);
+    expect(body.disable_signup).to.equal(true);
+    expect(body.external.anonymous_users).to.equal(false);
+  });
+}

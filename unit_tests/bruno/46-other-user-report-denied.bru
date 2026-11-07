@@ -1,0 +1,24 @@
+meta {
+  name: 46 - Report query identity enforced
+  type: http
+  seq: 46
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkouts?userId={{user_b_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+tests {
+  test("A cannot request B's report", () => {
+    expect(res.getStatus()).to.equal(403);
+    expect(res.getHeader("cache-control")).to.equal("no-store");
+    expect(res.getBody().error).to.equal("Unauthorized");
+  });
+}

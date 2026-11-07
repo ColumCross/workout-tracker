@@ -1,0 +1,28 @@
+meta {
+  name: 39 - Direct machine write denied
+  type: http
+  seq: 39
+}
+
+post {
+  url: {{base_url}}/rest/v1/machines
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "ID": "{{missing_machine_id}}" }
+}
+
+tests {
+  test("Authenticated has no direct machine INSERT", () => {
+    expect(res.getStatus()).to.equal(403);
+    expect(res.getBody().code).to.equal("42501");
+  });
+}

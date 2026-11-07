@@ -4,13 +4,12 @@ create table public.users (
   "user" uuid primary key references auth.users (id) on delete restrict,
   name text check (name is null or btrim(name) <> ''),
   weight_g integer check (weight_g is null or weight_g > 0),
-  height_cm integer check (height_cm is null or height_cm > 0)
+  height_cm integer check (height_cm is null or height_cm > 0),
+  eula_acknowledged bigint check (eula_acknowledged is null or eula_acknowledged > 0)
 );
 
 create table public.machines (
-  "ID" uuid primary key default gen_random_uuid(),
-  "user" uuid not null references public.users ("user") on delete restrict,
-  unique ("ID", "user")
+  "ID" uuid primary key default gen_random_uuid()
 );
 
 create table public.workouts (
@@ -34,8 +33,8 @@ create table public.exercises (
   unique ("workoutID", "user", exercise_number),
   foreign key ("workoutID", "user")
     references public.workouts ("workoutID", "user") on delete restrict,
-  foreign key (exercise, "user")
-    references public.machines ("ID", "user") on delete restrict
+  foreign key (exercise)
+    references public.machines ("ID") on delete restrict
 );
 
 create table public.sets (
@@ -51,10 +50,9 @@ create table public.sets (
     references public.exercises ("ID", "user", "workoutID") on delete restrict
 );
 
-create index machines_user_idx on public.machines ("user");
 create index workouts_user_start_time_idx on public.workouts ("user", start_time desc);
 create index exercises_workout_user_idx on public.exercises ("workoutID", "user");
-create index exercises_machine_user_idx on public.exercises (exercise, "user");
+create index exercises_machine_idx on public.exercises (exercise);
 create index sets_exercise_user_idx on public.sets ("exerciseID", "user");
 
 alter table public.users enable row level security;
@@ -77,10 +75,10 @@ on public.users
 for select to authenticated
 using ("user" = (select auth.uid()));
 
-create policy machines_select_own
+create policy machines_select_authenticated
 on public.machines
 for select to authenticated
-using ("user" = (select auth.uid()));
+using (true);
 
 create policy workouts_select_own
 on public.workouts
@@ -158,6 +156,9 @@ begin
   if v_start_time > clock_timestamp() + interval '5 minutes' then
     raise exception 'workoutID timestamp is too far in the future' using errcode = '22023';
   end if;
+
+  -- Prevent a complete account-data deletion from racing a new workout save.
+  perform pg_advisory_xact_lock(hashtextextended(v_user::text, 0));
 
   -- Serialize duplicate submissions before the existence check.
   perform pg_advisory_xact_lock(hashtextextended(v_workout_id, 0));
@@ -258,7 +259,6 @@ begin
         select 1
         from public.machines
         where "ID" = v_machine_id
-          and "user" = v_user
       ) then
         raise exception 'machine_id is unavailable' using errcode = '23503';
       end if;
@@ -399,3 +399,123 @@ $$;
 
 revoke all on function public."getWorkouts"() from public, anon;
 grant execute on function public."getWorkouts"() to authenticated;
+
+create or replace function public."getUserEULAStatus"()
+returns bigint
+language plpgsql
+security invoker
+set search_path = pg_catalog
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_acknowledged bigint;
+begin
+  if v_user is null then
+    raise exception 'Unauthorized' using errcode = 'PT403';
+  end if;
+
+  select u.eula_acknowledged into v_acknowledged
+  from public.users as u
+  where u."user" = v_user;
+
+  if not found then
+    raise exception 'The authenticated user is not provisioned' using errcode = '42501';
+  end if;
+
+  return v_acknowledged;
+end;
+$$;
+
+revoke all on function public."getUserEULAStatus"() from public, anon;
+grant execute on function public."getUserEULAStatus"() to authenticated;
+
+create or replace function public."acknowledgeEULA"()
+returns bigint
+language plpgsql
+security definer
+set search_path = pg_catalog
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_acknowledged bigint := floor(extract(epoch from clock_timestamp()) * 1000)::bigint;
+begin
+  if v_user is null then
+    raise exception 'Unauthorized' using errcode = 'PT403';
+  end if;
+
+  update public.users
+  set eula_acknowledged = v_acknowledged
+  where "user" = v_user;
+
+  if not found then
+    raise exception 'The authenticated user is not provisioned' using errcode = '42501';
+  end if;
+
+  return v_acknowledged;
+end;
+$$;
+
+revoke all on function public."acknowledgeEULA"() from public, anon;
+grant execute on function public."acknowledgeEULA"() to authenticated;
+
+create or replace function public."deleteAllWorkouts"()
+returns boolean
+language plpgsql
+security definer
+set search_path = pg_catalog
+as $$
+declare
+  v_user uuid := auth.uid();
+begin
+  if v_user is null then
+    raise exception 'Unauthorized' using errcode = 'PT403';
+  end if;
+
+  if not exists (
+    select 1
+    from public.users
+    where "user" = v_user
+  ) then
+    raise exception 'The authenticated user is not provisioned' using errcode = '42501';
+  end if;
+
+  -- Use the same per-user lock as saveWorkout to prevent a concurrent save.
+  perform pg_advisory_xact_lock(hashtextextended(v_user::text, 0));
+
+  delete from public.sets where "user" = v_user;
+  delete from public.exercises where "user" = v_user;
+  delete from public.workouts where "user" = v_user;
+
+  return true;
+end;
+$$;
+
+revoke all on function public."deleteAllWorkouts"() from public, anon;
+grant execute on function public."deleteAllWorkouts"() to authenticated;
+
+create or replace function public."deleteUser"()
+returns boolean
+language plpgsql
+security definer
+set search_path = pg_catalog
+as $$
+declare
+  v_user uuid := auth.uid();
+begin
+  if v_user is null then
+    raise exception 'Unauthorized' using errcode = 'PT403';
+  end if;
+
+  perform public."deleteAllWorkouts"();
+
+  delete from public.users where "user" = v_user;
+  if not found then
+    raise exception 'The authenticated user is not provisioned' using errcode = '42501';
+  end if;
+
+  return true;
+end;
+$$;
+
+revoke all on function public."deleteUser"() from public, anon;
+grant execute on function public."deleteUser"() to authenticated;

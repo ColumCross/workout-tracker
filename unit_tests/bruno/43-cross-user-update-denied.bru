@@ -1,0 +1,28 @@
+meta {
+  name: 43 - Cross-user workout update denied
+  type: http
+  seq: 43
+}
+
+patch {
+  url: {{base_url}}/rest/v1/workouts?workoutID=eq.{{workout_id_b}}
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "local_timezone": "MUST NOT CHANGE" }
+}
+
+tests {
+  test("Authenticated has no direct workout UPDATE", () => {
+    expect(res.getStatus()).to.equal(403);
+    expect(res.getBody().code).to.equal("42501");
+  });
+}

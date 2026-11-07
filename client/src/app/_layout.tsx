@@ -35,16 +35,19 @@ export default function RootLayout() {
 }
 
 function RootNavigator() {
-  const { loading, session } = useAuthSession();
+  const { loading, session, loginCheckError, loginCheckPending } = useAuthSession();
   if (loading) return null;
 
   return (
     <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
-      <Stack.Protected guard={!session}>
+      <Stack.Protected guard={!session || loginCheckPending || Boolean(loginCheckError)}>
         <Stack.Screen name="index" />
         <Stack.Screen name="auth/callback" />
       </Stack.Protected>
       <Stack.Protected guard={Boolean(session)}>
+        <Stack.Screen name="privacy-policy" />
+      </Stack.Protected>
+      <Stack.Protected guard={Boolean(session) && !loginCheckPending && !loginCheckError}>
         <Stack.Screen name="home" />
         <Stack.Screen name="reports" />
         <Stack.Screen name="workout/exercise" />

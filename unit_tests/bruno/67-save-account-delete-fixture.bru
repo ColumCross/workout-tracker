@@ -1,0 +1,28 @@
+meta {
+  name: 67 - Save account deletion fixture
+  type: http
+  seq: 67
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/saveWorkout
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{delete_access_token}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "payload": { "workoutID": "{{delete_workout_id}}", "local_timezone": "Etc/UTC", "exercises": [{ "exercise_name": "Delete account hierarchy", "machine_id": "{{shared_machine_id}}", "sets": [{ "reps": 4, "weight_g": 4000, "set_number": 1 }, { "reps": 5, "weight_g": 5000, "set_number": 2 }] }] } }
+}
+
+tests {
+  test("Dedicated account hierarchy saved", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()[0].workoutID).to.equal(bru.getEnvVar("delete_workout_id"));
+  });
+}

@@ -1,0 +1,31 @@
+meta {
+  name: 56 - Accept EULA A again
+  type: http
+  seq: 56
+}
+
+post {
+  url: {{base_url}}/functions/v1/acknowledgeEULA
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+script:pre-request {
+  bru.setVar("request_started_ms", Date.now());
+}
+
+tests {
+  test("Repeated acceptance updates with server time", () => {
+    expect(res.getStatus()).to.equal(200);
+    const timestamp = res.getBody().eulaAcknowledged;
+    expect(timestamp).to.be.at.least(bru.getVar("request_started_ms"));
+    expect(timestamp).to.be.at.most(Date.now());
+    expect(timestamp).to.be.at.least(Number(bru.getEnvVar("eula_first_timestamp")));
+    bru.setEnvVar("eula_second_timestamp", String(timestamp));
+  });
+}

@@ -1,0 +1,23 @@
+meta {
+  name: 62 - Bulk history empty after delete
+  type: http
+  seq: 62
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkouts?userId={{bulk_user_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{bulk_access_token}}
+}
+
+tests {
+  test("Bulk deletion removes caller hierarchy", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.deep.equal({ workouts: [] });
+  });
+}

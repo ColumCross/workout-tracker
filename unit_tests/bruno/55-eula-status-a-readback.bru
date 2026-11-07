@@ -1,0 +1,23 @@
+meta {
+  name: 55 - EULA status A read back
+  type: http
+  seq: 55
+}
+
+get {
+  url: {{base_url}}/functions/v1/getUserEULAStatus
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+tests {
+  test("Stored acknowledgement is returned exactly", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.deep.equal({ eulaAcknowledged: Number(bru.getEnvVar("eula_first_timestamp")) });
+  });
+}

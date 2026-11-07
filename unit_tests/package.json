@@ -1,0 +1,11 @@
+{
+  "name": "workout-tracker-regression-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node run.mjs",
+    "test:backend": "node backend/run.mjs",
+    "test:bruno": "node run-bruno.mjs",
+    "test:client": "npm --prefix ../client run test:client"
+  }
+}

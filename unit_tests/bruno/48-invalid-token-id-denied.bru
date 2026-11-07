@@ -1,0 +1,20 @@
+meta {
+  name: 48 - Invalid token ID denied
+  type: http
+  seq: 48
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkoutID
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{invalid_token}}
+}
+
+tests {
+  test("Invalid token is rejected", () => expect(res.getStatus()).to.equal(401));
+}

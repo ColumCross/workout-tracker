@@ -1,0 +1,30 @@
+meta {
+  name: 34 - A can read only own exercises
+  type: http
+  seq: 34
+}
+
+get {
+  url: {{base_url}}/rest/v1/exercises?select=ID,user,workoutID,exercise,exercise_name,exercise_number&order=workoutID.asc,exercise_number.asc
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+tests {
+  test("A sees own exercises, including shared-machine references", () => {
+    expect(res.getStatus()).to.equal(200);
+    const rows = res.getBody();
+    expect(rows).to.have.length(5);
+    expect(rows.every((row) => row.user === bru.getEnvVar("user_a_id"))).to.equal(true);
+    expect(rows.filter((row) => row.exercise === bru.getEnvVar("shared_machine_id"))).to.have.length(2);
+    expect(rows.some((row) => row.exercise_name === "B shared squat")).to.equal(false);
+    const first = rows.find((row) => row.workoutID === bru.getEnvVar("workout_id_a"));
+    expect(first).to.not.equal(undefined);
+    bru.setEnvVar("exercise_id_a", first.ID);
+  });
+}

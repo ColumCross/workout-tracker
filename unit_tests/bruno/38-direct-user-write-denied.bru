@@ -1,0 +1,28 @@
+meta {
+  name: 38 - Direct user write denied
+  type: http
+  seq: 38
+}
+
+post {
+  url: {{base_url}}/rest/v1/users
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "user": "{{user_a_id}}", "name": "Direct write must fail", "weight_g": 70000, "height_cm": 175 }
+}
+
+tests {
+  test("Authenticated has no direct user INSERT", () => {
+    expect(res.getStatus()).to.equal(403);
+    expect(res.getBody().code).to.equal("42501");
+  });
+}

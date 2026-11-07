@@ -1,0 +1,23 @@
+meta {
+  name: 76 - Refreshed A session works
+  type: http
+  seq: 76
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkoutID
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+tests {
+  test("Refreshed A token remains owner-scoped", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().workoutID).to.match(new RegExp("-" + bru.getEnvVar("user_a_id") + "$"));
+  });
+}

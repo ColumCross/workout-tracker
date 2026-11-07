@@ -1,0 +1,23 @@
+meta {
+  name: 64 - Delete already empty history
+  type: http
+  seq: 64
+}
+
+delete {
+  url: {{base_url}}/functions/v1/deleteAllWorkouts
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{bulk_access_token}}
+}
+
+tests {
+  test("Bulk deletion is safe on empty history", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.deep.equal({ success: true });
+  });
+}

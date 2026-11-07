@@ -1,0 +1,23 @@
+meta {
+  name: 36 - A reads shared machines
+  type: http
+  seq: 36
+}
+
+get {
+  url: {{base_url}}/rest/v1/machines?select=ID&ID=eq.{{shared_machine_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+tests {
+  test("A sees the shared machine", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.deep.equal([{ ID: bru.getEnvVar("shared_machine_id") }]);
+  });
+}

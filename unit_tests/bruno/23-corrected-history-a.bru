@@ -1,0 +1,29 @@
+meta {
+  name: 23 - Corrected retry appears once
+  type: http
+  seq: 23
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkouts?userId={{user_a_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+tests {
+  test("A history is oldest-first with complete corrected aggregate", () => {
+    expect(res.getStatus()).to.equal(200);
+    const workouts = res.getBody().workouts;
+    expect(workouts).to.have.length(2);
+    expect(Date.parse(workouts[0].start_time)).to.be.at.most(Date.parse(workouts[1].start_time));
+    expect(workouts[1].exercises).to.deep.equal([
+      { exercise_name: "Rollback corrected", exercise_number: 1, sets: [{ set_number: 1, reps: 6, weight_g: 1000 }] },
+      { exercise_name: "Rollback second", exercise_number: 2, sets: [{ set_number: 2, reps: 7, weight_g: 2000 }] }
+    ]);
+  });
+}

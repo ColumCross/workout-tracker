@@ -1,0 +1,26 @@
+meta {
+  name: 35 - A can read only own sets
+  type: http
+  seq: 35
+}
+
+get {
+  url: {{base_url}}/rest/v1/sets?select=user,workoutID,exerciseID,reps,weight_g,set_number&order=workoutID.asc,set_number.asc
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+tests {
+  test("A sees all and only A sets", () => {
+    expect(res.getStatus()).to.equal(200);
+    const rows = res.getBody();
+    expect(rows).to.have.length(6);
+    expect(rows.every((row) => row.user === bru.getEnvVar("user_a_id"))).to.equal(true);
+    expect(rows.some((row) => row.workoutID === bru.getEnvVar("workout_id_b"))).to.equal(false);
+  });
+}

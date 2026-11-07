@@ -1,0 +1,30 @@
+meta {
+  name: 09 - Generate ID B
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkoutID
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_b}}
+}
+
+script:pre-request {
+  bru.setEnvVar("workout_id_b", "");
+}
+
+tests {
+  test("B receives a distinct owner-scoped ID", () => {
+    expect(res.getStatus()).to.equal(200);
+    const id = res.getBody().workoutID;
+    expect(id).to.match(new RegExp("^[0-9]+-[0-9]{16}-" + bru.getEnvVar("user_b_id") + "$"));
+    expect(id).to.not.equal(bru.getEnvVar("workout_id_a"));
+    bru.setEnvVar("workout_id_b", id);
+  });
+}

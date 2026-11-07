@@ -1,0 +1,26 @@
+meta {
+  name: 45 - B history remains unchanged
+  type: http
+  seq: 45
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkouts?userId={{user_b_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_b}}
+}
+
+tests {
+  test("Rejected writes did not alter B", () => {
+    expect(res.getStatus()).to.equal(200);
+    const workouts = res.getBody().workouts;
+    expect(workouts).to.have.length(1);
+    expect(workouts[0].local_timezone).to.equal("Etc/UTC");
+    expect(workouts[0].exercises[0].exercise_name).to.equal("B shared squat");
+  });
+}

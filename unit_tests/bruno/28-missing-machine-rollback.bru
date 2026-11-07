@@ -1,0 +1,28 @@
+meta {
+  name: 28 - Missing machine rollback
+  type: http
+  seq: 28
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/saveWorkout
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "payload": { "workoutID": "{{validation_workout_id}}", "local_timezone": "Etc/UTC", "exercises": [{ "exercise_name": "Valid before missing machine", "sets": [{ "reps": 1, "weight_g": 0, "set_number": 1 }] }, { "exercise_name": "Missing shared machine", "machine_id": "{{missing_machine_id}}", "sets": [{ "reps": 2, "weight_g": 1000, "set_number": 2 }] }] } }
+}
+
+tests {
+  test("Nonexistent machine is the intended foreign-key failure", () => {
+    expect(res.getStatus()).to.equal(409);
+    expect(res.getBody().code).to.equal("23503");
+  });
+}

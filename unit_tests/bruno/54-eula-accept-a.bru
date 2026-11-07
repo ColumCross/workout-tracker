@@ -1,0 +1,32 @@
+meta {
+  name: 54 - Accept EULA A
+  type: http
+  seq: 54
+}
+
+post {
+  url: {{base_url}}/functions/v1/acknowledgeEULA
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+script:pre-request {
+  bru.setVar("request_started_ms", Date.now());
+}
+
+tests {
+  test("Server assigns a bounded numeric acknowledgement", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getHeader("cache-control")).to.equal("no-store");
+    const timestamp = res.getBody().eulaAcknowledged;
+    expect(timestamp).to.be.a("number");
+    expect(timestamp).to.be.at.least(bru.getVar("request_started_ms"));
+    expect(timestamp).to.be.at.most(Date.now());
+    bru.setEnvVar("eula_first_timestamp", String(timestamp));
+  });
+}

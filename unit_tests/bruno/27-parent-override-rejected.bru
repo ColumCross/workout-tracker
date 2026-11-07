@@ -1,0 +1,28 @@
+meta {
+  name: 27 - Caller cannot override set parent
+  type: http
+  seq: 27
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/saveWorkout
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "payload": { "workoutID": "{{validation_workout_id}}", "local_timezone": "Etc/UTC", "exercises": [{ "exercise_name": "Parent override", "sets": [{ "exerciseID": "{{missing_machine_id}}", "reps": 1, "weight_g": 0, "set_number": 1 }] }] } }
+}
+
+tests {
+  test("Unsupported parent field is rejected", () => {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getBody().code).to.equal("22023");
+  });
+}

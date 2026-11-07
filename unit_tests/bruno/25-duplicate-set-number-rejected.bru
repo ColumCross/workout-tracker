@@ -1,0 +1,28 @@
+meta {
+  name: 25 - Duplicate workout-wide set number
+  type: http
+  seq: 25
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/saveWorkout
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "payload": { "workoutID": "{{validation_workout_id}}", "local_timezone": "Etc/UTC", "exercises": [{ "exercise_name": "Valid first", "sets": [{ "reps": 1, "weight_g": 0, "set_number": 1 }] }, { "exercise_name": "Duplicate later", "sets": [{ "reps": 2, "weight_g": 0, "set_number": 1 }] }] } }
+}
+
+tests {
+  test("Workout-wide duplicate is the intended uniqueness failure", () => {
+    expect(res.getStatus()).to.equal(409);
+    expect(res.getBody().code).to.equal("23505");
+  });
+}

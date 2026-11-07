@@ -1,0 +1,23 @@
+meta {
+  name: 57 - EULA status B unchanged
+  type: http
+  seq: 57
+}
+
+get {
+  url: {{base_url}}/functions/v1/getUserEULAStatus
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_b}}
+}
+
+tests {
+  test("A acceptance did not change B", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.deep.equal({ eulaAcknowledged: false });
+  });
+}

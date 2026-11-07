@@ -1,0 +1,20 @@
+meta {
+  name: 49 - Expired token ID denied
+  type: http
+  seq: 49
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkoutID
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{expired_token}}
+}
+
+tests {
+  test("Locally verified expired token is rejected", () => expect(res.getStatus()).to.equal(401));
+}

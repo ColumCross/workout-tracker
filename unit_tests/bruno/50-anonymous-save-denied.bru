@@ -1,0 +1,24 @@
+meta {
+  name: 50 - Anonymous save denied
+  type: http
+  seq: 50
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/saveWorkout
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Content-Type: application/json
+}
+
+body:json {
+  { "payload": { "workoutID": "{{workout_id_a}}", "local_timezone": "Etc/UTC", "exercises": [{ "exercise_name": "Anonymous denied", "sets": [{ "reps": 1, "weight_g": 0, "set_number": 1 }] }] } }
+}
+
+tests {
+  test("Anonymous RPC execution is rejected", () => expect(res.getStatus()).to.equal(401));
+}

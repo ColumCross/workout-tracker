@@ -2,10 +2,13 @@ import type { Session } from "@supabase/supabase-js";
 import { AuthRequest, makeRedirectUri, ResponseType } from "expo-auth-session";
 import * as Crypto from "expo-crypto";
 import * as WebBrowser from "expo-web-browser";
+import { type Href, router } from "expo-router";
 import { createContext, type PropsWithChildren, useContext, useEffect, useState } from "react";
 import { useRef } from "react";
 
 import { getSupabase } from "@/lib/supabase";
+import { policyConfigurationError, policyEffectiveAt } from "@/features/privacy/policy";
+import { getUserEULAStatus } from "@/features/privacy/privacyGateway";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -14,7 +17,10 @@ type AuthSessionContextValue = {
   loading: boolean;
   configurationError: string | null;
   googleSignInReady: boolean;
+  loginCheckPending: boolean;
+  loginCheckError: string | null;
   signInWithGoogle: () => Promise<void>;
+  retryLoginCheck: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -32,7 +38,25 @@ export function AuthSessionProvider({ children }: PropsWithChildren) {
   const [configurationError, setConfigurationError] = useState<string | null>(null);
   const [preparedGoogleSignIn, setPreparedGoogleSignIn] = useState<PreparedGoogleSignIn | null>(null);
   const [googleSignInAttempt, setGoogleSignInAttempt] = useState(0);
+  const [loginCheckPending, setLoginCheckPending] = useState(false);
+  const [loginCheckError, setLoginCheckError] = useState<string | null>(null);
   const signInInProgress = useRef(false);
+
+  const checkEULAStatus = async () => {
+    setLoginCheckPending(true);
+    setLoginCheckError(null);
+    try {
+      if (policyConfigurationError || policyEffectiveAt === null) {
+        throw new Error(policyConfigurationError ?? "The bundled privacy policy has an invalid effective date.");
+      }
+      const acknowledged = await getUserEULAStatus();
+      setLoginCheckPending(false);
+      router.replace((acknowledged === false || acknowledged < policyEffectiveAt ? "/privacy-policy" : "/home") as Href);
+    } catch (error) {
+      setLoginCheckError(messageFrom(error));
+      setLoginCheckPending(false);
+    }
+  };
 
   useEffect(() => {
     try {
@@ -95,6 +119,8 @@ export function AuthSessionProvider({ children }: PropsWithChildren) {
 
     signInInProgress.current = true;
     setPreparedGoogleSignIn(null);
+    setLoginCheckPending(true);
+    setLoginCheckError(null);
     try {
       const result = await preparedGoogleSignIn.request.promptAsync({ authorizationEndpoint: googleAuthorizationEndpoint });
       if (result.type === "error") throw new Error(result.error?.description ?? "Google login failed.");
@@ -108,8 +134,10 @@ export function AuthSessionProvider({ children }: PropsWithChildren) {
         nonce: preparedGoogleSignIn.rawNonce,
       });
       if (error) throw error;
+      await checkEULAStatus();
     } finally {
       signInInProgress.current = false;
+      setLoginCheckPending(false);
       setGoogleSignInAttempt((attempt) => attempt + 1);
     }
   };
@@ -125,7 +153,10 @@ export function AuthSessionProvider({ children }: PropsWithChildren) {
       loading,
       configurationError,
       googleSignInReady: Boolean(preparedGoogleSignIn),
+      loginCheckPending,
+      loginCheckError,
       signInWithGoogle,
+      retryLoginCheck: checkEULAStatus,
       signOut,
     }}>
       {children}

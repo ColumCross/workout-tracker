@@ -1,0 +1,25 @@
+meta {
+  name: 83 - Issued B JWT after logout
+  type: http
+  seq: 83
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkoutID
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_b}}
+}
+
+tests {
+  test("Issued JWT may survive until expiry", () => expect([200, 401]).to.include(res.getStatus()));
+  if (res.getStatus() === 200) {
+    test("B surviving JWT remains owner-scoped", () => {
+      expect(res.getBody().workoutID).to.match(new RegExp("-" + bru.getEnvVar("user_b_id") + "$"));
+    });
+  }
+}

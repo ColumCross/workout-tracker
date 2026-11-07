@@ -1,0 +1,29 @@
+meta {
+  name: 66 - Generate account deletion fixture ID
+  type: http
+  seq: 66
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkoutID
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{delete_access_token}}
+}
+
+script:pre-request {
+  bru.setEnvVar("delete_workout_id", "");
+}
+
+tests {
+  test("Account deletion fixture gets own ID", () => {
+    expect(res.getStatus()).to.equal(200);
+    const id = res.getBody().workoutID;
+    expect(id).to.match(new RegExp("-" + bru.getEnvVar("delete_user_id") + "$"));
+    bru.setEnvVar("delete_workout_id", id);
+  });
+}

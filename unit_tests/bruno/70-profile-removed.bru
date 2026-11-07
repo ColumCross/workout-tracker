@@ -1,0 +1,23 @@
+meta {
+  name: 70 - Application profile removed
+  type: http
+  seq: 70
+}
+
+get {
+  url: {{base_url}}/rest/v1/users?select=user
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{delete_access_token}}
+}
+
+tests {
+  test("Deleted user has no RLS-visible application profile", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.deep.equal([]);
+  });
+}

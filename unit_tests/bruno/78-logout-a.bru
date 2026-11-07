@@ -1,0 +1,27 @@
+meta {
+  name: 78 - Logout A current session
+  type: http
+  seq: 78
+}
+
+post {
+  url: {{base_url}}/auth/v1/logout?scope=local
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+script:pre-request {
+  bru.setEnvVar("revoked_refresh_token_a", bru.getEnvVar("refresh_token_a"));
+}
+
+tests {
+  test("A current session logout succeeds", () => {
+    expect(res.getStatus()).to.equal(204);
+    bru.setEnvVar("refresh_token_a", "");
+  });
+}

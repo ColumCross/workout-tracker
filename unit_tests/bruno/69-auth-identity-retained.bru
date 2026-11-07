@@ -1,0 +1,23 @@
+meta {
+  name: 69 - Auth identity retained
+  type: http
+  seq: 69
+}
+
+get {
+  url: {{base_url}}/auth/v1/user
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{delete_access_token}}
+}
+
+tests {
+  test("Application deletion does not delete Auth identity", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().id).to.equal(bru.getEnvVar("delete_user_id"));
+  });
+}

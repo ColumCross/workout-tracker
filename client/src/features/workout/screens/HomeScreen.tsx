@@ -7,7 +7,7 @@ import { Screen } from "../components/Screen";
 import { usePreviewSession } from "../previewSession";
 import type { WorkoutStage } from "../viewModel";
 
-export function HomeScreen({ onNewWorkout, onResumeWorkout, onReports }: { onNewWorkout: () => void; onResumeWorkout: (stage: WorkoutStage) => void; onReports: () => void }) {
+export function HomeScreen({ onNewWorkout, onResumeWorkout, onReports, onPrivacyPolicy }: { onNewWorkout: () => void; onResumeWorkout: (stage: WorkoutStage) => void; onReports: () => void; onPrivacyPolicy: () => void }) {
   const theme = useTheme();
   const { signOut } = useAuthSession();
   const { beginWorkout, draftError, preview, reset } = usePreviewSession();
@@ -40,6 +40,7 @@ export function HomeScreen({ onNewWorkout, onResumeWorkout, onReports }: { onNew
       {preview ? <GhostButton onPress={() => onResumeWorkout(preview.stage)}>Resume workout</GhostButton> : <GhostButton loading={starting} onPress={start}>New workout</GhostButton>}
       {preview ? <GhostButton onPress={reset}>Discard unfinished workout</GhostButton> : null}
       <GhostButton onPress={onReports}>Reports</GhostButton>
+      <GhostButton onPress={onPrivacyPolicy}>Privacy Policy</GhostButton>
       <GhostButton onPress={logout}>Sign out</GhostButton>
     </Screen>
   );

@@ -1,0 +1,23 @@
+meta {
+  name: 51 - Auth-only ID denied
+  type: http
+  seq: 51
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkoutID
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{auth_only_access_token}}
+}
+
+tests {
+  test("Valid Auth session without profile is denied membership", () => {
+    expect(res.getStatus()).to.equal(403);
+    expect(res.getBody().error).to.include("not provisioned");
+  });
+}

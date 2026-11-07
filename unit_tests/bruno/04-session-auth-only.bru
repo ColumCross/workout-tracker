@@ -1,0 +1,23 @@
+meta {
+  name: 04 - Auth-only session
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/auth/v1/user
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{auth_only_access_token}}
+}
+
+tests {
+  test("Auth-only session is valid", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().id).to.equal(bru.getEnvVar("auth_only_user_id"));
+  });
+}

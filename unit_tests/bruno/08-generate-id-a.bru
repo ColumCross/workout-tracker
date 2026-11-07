@@ -1,0 +1,35 @@
+meta {
+  name: 08 - Generate ID A
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{base_url}}/functions/v1/getWorkoutID
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{publishable_key}}
+  Authorization: Bearer {{access_token_a}}
+}
+
+script:pre-request {
+  bru.setEnvVar("workout_id_a", "");
+  bru.setVar("request_started_ms", Date.now());
+}
+
+tests {
+  test("Owner-scoped ID uses bounded server time and is not cached", () => {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getHeader("cache-control")).to.equal("no-store");
+    const id = res.getBody().workoutID;
+    const match = id.match(/^([0-9]+)-([0-9]{16})-([0-9a-f-]{36})$/i);
+    expect(match).to.not.equal(null);
+    expect(match[3]).to.equal(bru.getEnvVar("user_a_id"));
+    expect(Number(match[1])).to.be.at.least(bru.getVar("request_started_ms"));
+    expect(Number(match[1])).to.be.at.most(Date.now());
+    bru.setEnvVar("workout_id_a", id);
+  });
+}
