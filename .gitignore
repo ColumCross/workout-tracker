@@ -75,6 +75,11 @@ Thumbs.db
 # dependencies
 node_modules/
 
+!/assets/
+!/assets/**
+
+client/.gitignore
+
 # Expo
 .expo/
 dist/

@@ -5,6 +5,9 @@ import * as WebBrowser from "expo-web-browser";
 import { type Href, router } from "expo-router";
 import { createContext, type PropsWithChildren, useContext, useEffect, useState } from "react";
 import { useRef } from "react";
+import { Platform } from "react-native";
+
+import appConfig from "../../../app.json";
 
 import { getSupabase } from "@/lib/supabase";
 import { policyConfigurationError, policyEffectiveAt } from "@/features/privacy/policy";
@@ -95,9 +98,16 @@ export function AuthSessionProvider({ children }: PropsWithChildren) {
           rawNonce,
           { encoding: Crypto.CryptoEncoding.HEX },
         );
+        // Production web exports are hosted under the configured repository path.
+        const basePath = Platform.OS === "web" && !__DEV__
+          ? appConfig.expo.experiments.baseUrl.replace(/^\/+|\/+$/g, "")
+          : "";
         const request = new AuthRequest({
           clientId,
-          redirectUri: makeRedirectUri({ scheme: "workouttracker", path: "auth/callback" }),
+          redirectUri: makeRedirectUri({
+            scheme: "workouttracker",
+            path: basePath ? `${basePath}/auth/callback` : "auth/callback",
+          }),
           responseType: ResponseType.IdToken,
           scopes: ["openid", "https://www.googleapis.com/auth/userinfo.email"],
           usePKCE: false,
