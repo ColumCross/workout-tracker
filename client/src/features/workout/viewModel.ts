@@ -6,7 +6,7 @@ export type ExerciseView = {
   sets: RecordedSetView[];
 };
 
-export type WorkoutStage = "exercise" | "session" | "summary";
+export type WorkoutStage = "exercise" | "session" | "exercise-summary" | "summary";
 
 export type WorkoutPreview = {
   localKey: string;

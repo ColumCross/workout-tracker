@@ -30,6 +30,8 @@ type PreviewSessionContextValue = {
   showResting: () => void;
   showReady: () => void;
   endExercise: () => void;
+  showExerciseSummary: () => void;
+  showWorkoutSummary: () => void;
   submitWorkout: () => Promise<void>;
   reset: () => void;
 };
@@ -290,7 +292,15 @@ export function PreviewSessionProvider({ children }: PropsWithChildren) {
     clearTicker();
     deadlineMs.current = null;
     setTimerStatus("completed");
+    setPreview((current) => current && { ...current, stage: "exercise-summary" });
+  };
+
+  const showWorkoutSummary = () => {
     setPreview((current) => current && { ...current, stage: "summary" });
+  };
+
+  const showExerciseSummary = () => {
+    setPreview((current) => current && { ...current, stage: "exercise-summary" });
   };
 
   const submitWorkout = async () => {
@@ -338,6 +348,8 @@ export function PreviewSessionProvider({ children }: PropsWithChildren) {
       showResting: () => setMode("resting"),
       showReady: () => setMode("ready"),
       endExercise,
+      showExerciseSummary,
+      showWorkoutSummary,
       submitWorkout,
       reset,
     }}>
@@ -368,7 +380,7 @@ function isWorkoutPreview(value: unknown, userID: string): value is WorkoutPrevi
     && typeof candidate.workoutID === "string"
     && candidate.workoutID.endsWith(`-${userID}`)
     && typeof candidate.localTimezone === "string"
-    && (candidate.stage === "exercise" || candidate.stage === "session" || candidate.stage === "summary")
+    && (candidate.stage === "exercise" || candidate.stage === "session" || candidate.stage === "exercise-summary" || candidate.stage === "summary")
     && Array.isArray(candidate.exercises)
     && (candidate.stage === "exercise" || candidate.exercises.length > 0)
     && candidate.exercises.every((exercise) => Boolean(exercise)
@@ -384,5 +396,8 @@ function isWorkoutPreview(value: unknown, userID: string): value is WorkoutPrevi
         && Number.isFinite(set.weight)
         && set.weight >= 0
         && Math.round(set.weight * 1000) <= 2147483647))
-    && (candidate.stage !== "summary" || candidate.exercises.every((exercise) => exercise.sets.length > 0));
+    && (
+      (candidate.stage !== "exercise-summary" && candidate.stage !== "summary")
+      || candidate.exercises.every((exercise) => exercise.sets.length > 0)
+    );
 }

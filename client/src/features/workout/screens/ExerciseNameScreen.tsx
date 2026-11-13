@@ -7,7 +7,7 @@ import { usePreviewSession } from "../previewSession";
 
 export function ExerciseNameScreen({ onComplete, onCancel, onReturnToSummary }: { onComplete: () => void; onCancel: () => void; onReturnToSummary: () => void }) {
   const theme = useTheme();
-  const { preview, addExercise, reset } = usePreviewSession();
+  const { preview, addExercise, reset, showExerciseSummary } = usePreviewSession();
   const [name, setName] = useState("");
   const [showError, setShowError] = useState(false);
   useEffect(() => { if (!preview) onCancel(); }, [preview, onCancel]);
@@ -22,7 +22,10 @@ export function ExerciseNameScreen({ onComplete, onCancel, onReturnToSummary }: 
       {showError ? <HelperText type="error">Enter an exercise name.</HelperText> : null}
       <GhostButton onPress={next}>Next</GhostButton>
       <GhostButton onPress={() => {
-        if (preview?.exercises.length) onReturnToSummary();
+        if (preview?.exercises.length) {
+          showExerciseSummary();
+          onReturnToSummary();
+        }
         else { reset(); onCancel(); }
       }}>Back</GhostButton>
     </Screen>

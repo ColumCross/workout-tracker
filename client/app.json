@@ -4,7 +4,7 @@
     "slug": "workout-tracker",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/workout-tracker-icon-simple.jpg",
     "scheme": "workouttracker",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -21,7 +21,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/workout-tracker-icon-simple.jpg"
     },
     "plugins": [
       [
@@ -36,7 +36,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/workout-tracker-icon-simple.jpg",
           "imageWidth": 76
         }
       ]

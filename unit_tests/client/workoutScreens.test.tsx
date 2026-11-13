@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react-native";
 import type { PropsWithChildren } from "react";
 import { Pressable, Text, View } from "react-native";
+import { PaperProvider } from "react-native-paper";
 
 import { useAuthSession } from "@/features/auth/authSession";
 import { usePreviewSession } from "@/features/workout/previewSession";
@@ -56,12 +57,18 @@ test("home starts once, routes resume by stage, discards immediately, and report
   expect(onResumeWorkout).toHaveBeenCalledWith("summary");
   expect(reset).toHaveBeenCalledTimes(1);
   await resumed.unmount();
+
+  mockUsePreviewSession.mockReturnValue({ beginWorkout, draftError: null, preview: { stage: "exercise-summary" }, reset } as never);
+  const exerciseSummary = await render(<HomeScreen onNewWorkout={jest.fn()} onResumeWorkout={onResumeWorkout} onReports={jest.fn()} onPrivacyPolicy={jest.fn()} />);
+  await pressAsync(exerciseSummary, "Resume workout");
+  expect(onResumeWorkout).toHaveBeenLastCalledWith("exercise-summary");
+  await exerciseSummary.unmount();
 });
 
 test("exercise naming validates, trims through the provider, and uses stage-sensitive Back", async () => {
   const addExercise = jest.fn((name: string) => name.trim().length > 0);
   const reset = jest.fn();
-  mockUsePreviewSession.mockReturnValue({ preview: { exercises: [] }, addExercise, reset } as never);
+  mockUsePreviewSession.mockReturnValue({ preview: { exercises: [] }, addExercise, reset, showExerciseSummary: jest.fn() } as never);
   const onComplete = jest.fn();
   const onCancel = jest.fn();
   const screen = await render(<ExerciseNameScreen onComplete={onComplete} onCancel={onCancel} onReturnToSummary={jest.fn()} />);
@@ -77,21 +84,60 @@ test("exercise naming validates, trims through the provider, and uses stage-sens
   await screen.unmount();
 
   const onReturnToSummary = jest.fn();
-  mockUsePreviewSession.mockReturnValue({ preview: { exercises: [{}] }, addExercise, reset } as never);
+  const showExerciseSummary = jest.fn();
+  mockUsePreviewSession.mockReturnValue({ preview: { exercises: [{}] }, addExercise, reset, showExerciseSummary } as never);
   const later = await render(<ExerciseNameScreen onComplete={jest.fn()} onCancel={jest.fn()} onReturnToSummary={onReturnToSummary} />);
   await pressAsync(later, "Back");
+  expect(showExerciseSummary).toHaveBeenCalledTimes(1);
   expect(onReturnToSummary).toHaveBeenCalledTimes(1);
   await later.unmount();
 });
 
-test("summary renders per-exercise labels and save/retry/done interactions", async () => {
+test("exercise summary displays only the completed exercise and can advance to workout summary", async () => {
+  const beginNextExercise = jest.fn();
+  const showWorkoutSummary = jest.fn();
+  mockUsePreviewSession.mockReturnValue({
+    preview: {
+      stage: "exercise-summary",
+      exercises: [
+        { localKey: "first", displayName: "Squat", sets: [{ localKey: "first-set", reps: 5, weight: 100 }] },
+        { localKey: "last", displayName: "Bench", sets: [{ localKey: "last-set", reps: 10, weight: 60.5 }] },
+      ],
+    },
+    beginNextExercise,
+    showWorkoutSummary,
+    submissionError: null,
+    submissionStatus: "idle",
+    draftError: null,
+  } as never);
+
+  const onNextExercise = jest.fn();
+  const screen = await render(
+    <PaperProvider>
+      <WorkoutSummaryScreen onRestart={jest.fn()} onNextExercise={onNextExercise} onMissingSession={jest.fn()} />
+    </PaperProvider>,
+  );
+  expect(screen.getByText("Summary of Bench")).toBeTruthy();
+  expect(screen.getByText("Set 1 · 10 reps · 60.5 kg")).toBeTruthy();
+  expect(screen.queryByText("Set 1 · 5 reps · 100 kg")).toBeNull();
+  await pressAsync(screen, "Next Exercise");
+  expect(beginNextExercise).toHaveBeenCalledTimes(1);
+  expect(onNextExercise).toHaveBeenCalledTimes(1);
+  await pressAsync(screen, "End Workout");
+  expect(showWorkoutSummary).toHaveBeenCalledTimes(1);
+  await screen.unmount();
+});
+
+test("workout summary saves, confirms discard, and retains the saved done action", async () => {
   const beginNextExercise = jest.fn();
   const submitWorkout = jest.fn();
   const reset = jest.fn();
+  const showWorkoutSummary = jest.fn();
   const base = {
-    preview: { exercises: [{ localKey: "exercise", displayName: "Bench", sets: [{ localKey: "set", reps: 10, weight: 60.5 }] }] },
+    preview: { stage: "summary", exercises: [{ localKey: "exercise", displayName: "Bench", sets: [{ localKey: "set", reps: 10, weight: 60.5 }] }] },
     reset,
     beginNextExercise,
+    showWorkoutSummary,
     submitWorkout,
     submissionError: "Save failed",
     submissionStatus: "error",
@@ -99,19 +145,36 @@ test("summary renders per-exercise labels and save/retry/done interactions", asy
   };
   mockUsePreviewSession.mockReturnValue(base as never);
   const onNextExercise = jest.fn();
-  const first = await render(<WorkoutSummaryScreen onRestart={jest.fn()} onNextExercise={onNextExercise} onMissingSession={jest.fn()} />);
+  const onRestartAfterDiscard = jest.fn();
+  const first = await render(
+    <PaperProvider>
+      <WorkoutSummaryScreen onRestart={onRestartAfterDiscard} onNextExercise={onNextExercise} onMissingSession={jest.fn()} />
+    </PaperProvider>,
+  );
+  expect(first.getByText("Summary of exercises")).toBeTruthy();
   expect(first.getByText("Set 1 · 10 reps · 60.5 kg")).toBeTruthy();
   expect(first.getByText("Save failed")).toBeTruthy();
-  await pressAsync(first, "Next Exercise");
-  expect(beginNextExercise).toHaveBeenCalledTimes(1);
-  expect(onNextExercise).toHaveBeenCalledTimes(1);
-  await pressAsync(first, "Retry save");
+  await pressAsync(first, "Save Workout");
   expect(submitWorkout).toHaveBeenCalledTimes(1);
+  await act(async () => { await first.getAllByText("Discard Workout")[0].props.onPress(); });
+  expect(first.getByText("Discard workout?")).toBeTruthy();
+  await pressAsync(first, "Cancel");
+  expect(reset).not.toHaveBeenCalled();
+  await act(async () => { await first.getAllByText("Discard Workout")[0].props.onPress(); });
+  const discardButtons = first.getAllByText("Discard Workout");
+  await act(async () => { await discardButtons.at(-1).props.onPress(); });
+  expect(reset).toHaveBeenCalledTimes(1);
+  expect(onRestartAfterDiscard).toHaveBeenCalledTimes(1);
   await first.unmount();
 
+  reset.mockClear();
   const onRestart = jest.fn();
   mockUsePreviewSession.mockReturnValue({ ...base, submissionError: null, submissionStatus: "saved" } as never);
-  const saved = await render(<WorkoutSummaryScreen onRestart={onRestart} onNextExercise={jest.fn()} onMissingSession={jest.fn()} />);
+  const saved = await render(
+    <PaperProvider>
+      <WorkoutSummaryScreen onRestart={onRestart} onNextExercise={jest.fn()} onMissingSession={jest.fn()} />
+    </PaperProvider>,
+  );
   expect(saved.getByText("Workout saved.")).toBeTruthy();
   await pressAsync(saved, "Done");
   expect(reset).toHaveBeenCalledTimes(1);

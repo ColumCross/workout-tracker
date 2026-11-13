@@ -81,7 +81,7 @@ test("validates rep and weight input before recording one set", async () => {
   const state = session();
   mockUsePreviewSession.mockReturnValue(state as never);
   const screen = await renderSessionScreen({ onFinished: jest.fn(), onDiscarded: jest.fn(), onMissingSession: jest.fn() });
-  await fireEvent.press(screen.getByText("Enter"));
+  await fireEvent.press(screen.getByText("End Set"));
   expect(screen.getByText("Enter a positive whole number.")).toBeTruthy();
   expect(screen.getByText("Enter a non-negative number.")).toBeTruthy();
   expect(state.recordSet).not.toHaveBeenCalled();
@@ -89,7 +89,7 @@ test("validates rep and weight input before recording one set", async () => {
   const inputs = screen.getAllByTestId("text-input-flat");
   await fireEvent.changeText(inputs[0], "8");
   await fireEvent.changeText(inputs[1], "60,5");
-  await fireEvent.press(screen.getByText("Enter"));
+  await fireEvent.press(screen.getByText("End Set"));
   expect(state.recordSet).toHaveBeenCalledWith(8, 60.5);
 });
 
@@ -108,15 +108,32 @@ test("pauses and resumes from the entry strip", async () => {
   expect(paused.resumeRest).toHaveBeenCalledTimes(1);
 });
 
-test("only offers End Exercise after a recorded set and finishes through summary", async () => {
+test("records a valid final set before ending the exercise", async () => {
   const state = session({
-    mode: "ready",
+    mode: "entry",
     timerStatus: "completed",
     preview: { exercises: [{ localKey: "exercise", displayName: "Bench", sets: [{ localKey: "set", reps: 8, weight: 60 }] }] },
   });
   mockUsePreviewSession.mockReturnValue(state as never);
   const onFinished = jest.fn();
   const screen = await renderSessionScreen({ onFinished, onDiscarded: jest.fn(), onMissingSession: jest.fn() });
+  const inputs = screen.getAllByTestId("text-input-flat");
+  await fireEvent.changeText(inputs[0], "8");
+  await fireEvent.changeText(inputs[1], "60");
   await fireEvent.press(screen.getByText("End Exercise"));
+  expect(state.recordSet).toHaveBeenCalledWith(8, 60);
   expect(state.endExercise).toHaveBeenCalledTimes(1);
+});
+
+test("does not end the exercise when the final set is invalid", async () => {
+  const state = session({
+    mode: "entry",
+    timerStatus: "completed",
+    preview: { exercises: [{ localKey: "exercise", displayName: "Bench", sets: [{ localKey: "set", reps: 8, weight: 60 }] }] },
+  });
+  mockUsePreviewSession.mockReturnValue(state as never);
+  const screen = await renderSessionScreen({ onFinished: jest.fn(), onDiscarded: jest.fn(), onMissingSession: jest.fn() });
+  await fireEvent.press(screen.getByText("End Exercise"));
+  expect(state.recordSet).not.toHaveBeenCalled();
+  expect(state.endExercise).not.toHaveBeenCalled();
 });

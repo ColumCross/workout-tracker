@@ -135,6 +135,8 @@ test("records ordered sets, preserves the same ID across a failed save, and clea
   await act(async () => {
     result.current.endExercise();
   });
+  expect(result.current.preview?.stage).toBe("exercise-summary");
+  await act(async () => { result.current.showWorkoutSummary(); });
   expect(result.current.preview?.stage).toBe("summary");
   await waitFor(() => expect(AsyncStorage.setItem).toHaveBeenCalled());
   jest.mocked(AsyncStorage.removeItem).mockClear();
@@ -152,13 +154,13 @@ test("records ordered sets, preserves the same ID across a failed save, and clea
   expect(AsyncStorage.removeItem).toHaveBeenCalledWith(`workout-tracker:draft:${userA}`);
 });
 
-test("restores only a valid draft for the current user and resets transient timer state", async () => {
+test("restores a valid exercise-summary draft for the current user and resets transient timer state", async () => {
   const draft = {
     localKey: "draft",
     workoutID,
     ownerID: userA,
     localTimezone: "Europe/Dublin",
-    stage: "session",
+    stage: "exercise-summary",
     exercises: [{ localKey: "exercise", displayName: "Row", sets: [{ localKey: "set", reps: 8, weight: 20 }] }],
   };
   await AsyncStorage.setItem(`workout-tracker:draft:${userA}`, JSON.stringify(draft));
@@ -205,6 +207,7 @@ test("surfaces malformed JSON, persistence, and saved-cleanup failures", async (
   await act(async () => {
     persisted.result.current.endExercise();
   });
+  await act(async () => { persisted.result.current.showWorkoutSummary(); });
   jest.mocked(AsyncStorage.removeItem).mockRejectedValueOnce(new Error("remove failed"));
   await act(async () => { await persisted.result.current.submitWorkout(); });
   expect(persisted.result.current.submissionStatus).toBe("saved");
